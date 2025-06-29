@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <h5>Списки задач</h5>
+        <ul class="list-group mb-3">
+            {% for list in lists %}
+                <li class="list-group-item {% if request.GET.list|stringformat:"s" == list.id|stringformat:"s" %}active{% endif %}">
+                    <a href="{% url 'task-list' %}?list={{ list.id }}" class="text-decoration-none {% if request.GET.list|stringformat:"s" == list.id|stringformat:"s" %}text-white{% endif %}">
+                        {{ list.name }}
+                    </a>
+                    <a href="{% url 'list-update' list.id %}" class="btn btn-sm btn-outline-secondary float-end ms-2">✎</a>
+                    <a href="{% url 'list-delete' list.id %}" class="btn btn-sm btn-outline-danger float-end">✖</a>
+                </li>
+            {% empty %}
+                <li class="list-group-item">Нет списков</li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'list-create' %}" class="btn btn-primary w-100">+ Добавить список</a>
+    </div>
+    <div class="col-md-9">
+        {% block tasks_content %}
+        <p>Выберите список для отображения задач.</p>
+        {% endblock %}
+    </div>
+</div>
+{% endblock %}

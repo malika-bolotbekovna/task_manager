@@ -1,24 +1,84 @@
-{% extends "tasks/base.html" %}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Задачи{% endblock %}
 
 {% block content %}
-<form method="get" class="d-flex mb-3">
-    <select name="category" class="form-select me-2">
-        <option value="">Все категории</option>
-        {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
-        {% endfor %}
+<h2>Задачи</h2>
+
+<form method="get" class="row g-3 align-items-center mb-4">
+  <div class="col-auto">
+    <label for="status" class="col-form-label">Фильтр:</label>
+  </div>
+  <div class="col-auto">
+    <select name="status" id="status" class="form-select" onchange="this.form.submit()">
+      <option value="" {% if not request.GET.status %}selected{% endif %}>Все</option>
+      <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Выполненные</option>
+      <option value="not_completed" {% if request.GET.status == 'not_completed' %}selected{% endif %}>Не выполненные</option>
+      <option value="urgent" {% if request.GET.status == 'urgent' %}selected{% endif %}>Срочные</option>
+      <option value="overdue" {% if request.GET.status == 'overdue' %}selected{% endif %}>Просроченные</option>
     </select>
-    <input type="text" name="search" class="form-control me-2" placeholder="Поиск" value="{{ request.GET.search }}">
-    <button class="btn btn-primary">Фильтр</button>
+  </div>
+  <div class="col-auto">
+    <input type="text" name="search" placeholder="Поиск..." class="form-control" value="{{ request.GET.search|default:'' }}" />
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">Применить</button>
+  </div>
+  <div class="col-auto">
+    <a href="{% url 'task-create' %}" class="btn btn-success mb-3">+ Добавить задачу</a>
+  </div>
 </form>
 
-<ul class="list-group">
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>Статус</th>
+      <th>Название</th>
+      <th>Приоритет</th>
+      <th>Дедлайн</th>
+      <th>Создана</th>
+      <th>Выполнена</th>
+      <th>Действия</th>
+    </tr>
+  </thead>
+  <tbody>
     {% for task in tasks %}
-        <li class="list-group-item">
-            <a href="{% url 'task-detail' task.pk %}">{{ task.title }}</a> — {{ task.category.name }}
-        </li>
+      <tr class="{% if task.completed %}table-success{% elif task.deadline and task.deadline < now %}table-danger{% endif %}">
+        <td>
+          <form method="post" action="{% url 'task-toggle' task.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="completed" value="{% if task.completed %}False{% else %}True{% endif %}">
+            <button type="submit" class="btn btn-sm btn-outline-{% if task.completed %}success{% else %}secondary{% endif %}">
+              {% if task.completed %}✓{% else %}✗{% endif %}
+            </button>
+          </form>
+        </td>
+        <td>{{ task.title }}</td>
+        <td>{{ task.get_priority_display }}</td>
+        <td>
+          {% if task.deadline %}
+            <span class="{% if task.deadline < now %}text-danger{% elif task.deadline < now|add:'2 days' %}text-warning{% else %}text-success{% endif %}">
+              {{ task.deadline|date:"d.m.Y H:i" }}
+            </span>
+          {% endif %}
+        </td>
+        <td>{{ task.created_at|date:"d.m.Y H:i" }}</td>
+        <td>
+          {% if task.completed_at %}
+            {{ task.completed_at|date:"d.m.Y H:i" }}
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'task-update' task.id %}" class="btn btn-sm btn-outline-secondary">✎</a>
+          <a href="{% url 'task-delete' task.id %}" class="btn btn-sm btn-outline-danger">✖</a>
+        </td>
+      </tr>
     {% empty %}
-        <li class="list-group-item">Нет задач.</li>
+      <tr>
+        <td colspan="7" class="text-center">Нет задач</td>
+      </tr>
     {% endfor %}
-</ul>
+  </tbody>
+</table>
 {% endblock %}

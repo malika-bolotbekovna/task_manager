@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Task Manager{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .content-wrapper {
+        display: flex;
+        flex: 1;
+      }
+      .sidebar {
+        width: 250px;
+        background-color: #f8f9fa;
+        padding: 1rem;
+      }
+      .main-content {
+        flex-grow: 1;
+        padding: 1rem;
+      }
+      .sidebar .user-info {
+        margin-bottom: 1rem;
+        text-align: center;
+      }
+      .sidebar .user-info img {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      a {
+        text-decoration: none;
+      }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'task-list' %}">TaskManager</a>
+
+        <div class="d-flex">
+          {% if user.is_authenticated %}
+            <span class="navbar-text me-3">Привет, {{ user.username }}!</span>
+            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-light btn-sm">Выйти</button>
+            </form>
+
+          {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Войти</a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <div class="content-wrapper">
+      <aside class="sidebar">
+        <div class="user-info text-center mb-3">
+        <a href="{% url 'profile' %}" style="text-decoration: none; color: inherit;">
+            {% if user.is_authenticated and user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="Аватар" />
+            {% else %}
+            <img src="https://via.placeholder.com/80" alt="Аватар" />
+            {% endif %}
+            <h5>{{ user.username }}</h5>
+        </a>
+        </div>
+
+
+        <h6>Списки задач</h6>
+            <ul class="list-group mb-3">
+            <li class="list-group-item {% if not request.GET.list %}active{% endif %}">
+                <a href="{% url 'task-list' %}" class="{% if not request.GET.list %}text-white{% endif %}">Все задачи</a>
+            </li>
+            {% for list in lists %}
+            <li class="list-group-item d-flex justify-content-between align-items-center
+                {% if request.path == list.get_absolute_url %}active{% endif %}">
+                <a href="{% url 'list-detail' list.id %}" class="{% if request.path == list.get_absolute_url %}text-white{% endif %}">
+                {{ list.name }}
+                </a>
+
+                <!-- Кнопка копирования ссылки -->
+                <button class="btn btn-sm btn-outline-primary copy-link-btn" data-url="{% url 'list-detail' list.id %}" title="Скопировать ссылку">
+                📋
+                </button>
+            </li>
+            {% empty %}
+            <li class="list-group-item">Списков нет</li>
+            {% endfor %}
+            </ul>
+
+
+        <a href="{% url 'list-create' %}" class="btn btn-primary btn-sm w-100">+ Добавить список</a>
+
+        <hr />
+        <a href="{% url 'statistics' %}" class="btn btn-outline-secondary btn-sm w-100 mt-3">Статистика</a>
+      </aside>
+      <main class="main-content">
+        {% block content %}
+        {% endblock %}
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

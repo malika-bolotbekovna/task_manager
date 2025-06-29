@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Статистика</h2>
+
+<div class="row justify-content-center">
+  <div class="col-sm-12 col-md-6 mb-4 d-flex flex-column align-items-center">
+    <h5 class="text-center mb-3">Все задачи</h5>
+    <canvas id="chartAll" style="max-width: 350px; max-height: 350px;"></canvas>
+  </div>
+
+  <div class="col-sm-12 col-md-6 mb-4 d-flex flex-column align-items-center">
+    <h5 class="text-center mb-3">Задачи по спискам</h5>
+    <canvas id="chartLists" style="max-width: 350px; max-height: 350px;"></canvas>
+  </div>
+</div>
+
+{{ pie_data_all.labels|json_script:"labels_all" }}
+{{ pie_data_all.data|json_script:"data_all" }}
+{{ pie_data_lists.labels|json_script:"labels_lists" }}
+{{ pie_data_lists.data|json_script:"data_lists" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const labelsAll = JSON.parse(document.getElementById('labels_all').textContent);
+  const dataAll = JSON.parse(document.getElementById('data_all').textContent);
+  const labelsLists = JSON.parse(document.getElementById('labels_lists').textContent);
+  const dataLists = JSON.parse(document.getElementById('data_lists').textContent);
+
+  new Chart(document.getElementById("chartAll"), {
+    type: "pie",
+    data: {
+      labels: labelsAll,
+      datasets: [{
+        label: "Все задачи",
+        data: dataAll,
+        backgroundColor: ["#28a745", "#ffc107", "#dc3545"]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+
+  new Chart(document.getElementById("chartLists"), {
+    type: "pie",
+    data: {
+      labels: labelsLists,
+      datasets: [{
+        label: "Задачи по спискам",
+        data: dataLists,
+        backgroundColor: [
+          "#0d6efd", "#6f42c1", "#fd7e14", "#20c997", "#6610f2",
+          "#d63384", "#198754", "#dc3545", "#ffc107", "#0dcaf0"
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+</script>
+
+<div class="mt-4 p-3 border rounded bg-light">
+  <h4>Ваши выводы по продуктивности</h4>
+  <ul>
+    <li>Всего задач: <strong>{{ total }}</strong></li>
+    <li>Выполнено: <strong>{{ completed }}</strong></li>
+    <li>Не выполнено: <strong>{{ not_completed }}</strong></li>
+    <li>Просрочено: <strong>{{ overdue }}</strong></li>
+    <li>Срочные задачи: <strong>{{ urgent }}</strong></li>
+  </ul>
+  <p>
+    {% if completed > half_total %}
+    Отличная работа! Вы успешно выполняете большую часть своих задач.
+    {% else %}
+    Попробуйте уделять больше внимания выполнению задач, чтобы повысить продуктивность.
+    {% endif %}
+
+  </p>
+</div>
+{% endblock %}

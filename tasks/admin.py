@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Task
+from .models import List, Task
 
-admin.site.register(Category)
+admin.site.register(List)
 admin.site.register(Task)

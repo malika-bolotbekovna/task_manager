@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Список: {{ list.name }}</h2>
+
+{% if tasks %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Задача</th>
+      <th>Приоритет</th>
+      <th>Дедлайн</th>
+      <th>Статус</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for task in tasks %}
+    <tr>
+      <td>{{ task.title }}</td>
+      <td>{{ task.get_priority_display }}</td>
+      <td>{% if task.deadline %}{{ task.deadline|date:"d.m.Y H:i" }}{% endif %}</td>
+      <td>{% if task.completed %}Выполнена{% else %}В работе{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>В этом списке пока нет задач.</p>
+{% endif %}
+
+<a href="{% url 'task-list' %}">Вернуться ко всем задачам</a>
+{% endblock %}
