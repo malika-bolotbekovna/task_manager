@@ -17,12 +17,9 @@
                 <li class="list-group-item">Нет списков</li>
             {% endfor %}
         </ul>
-        <a href="{% url 'list-create' %}" class="btn btn-primary w-100">+ Добавить список</a>
+        <a href="{% url 'list-create' %}" class="btn btn-custom w-100">+ Добавить список</a>
     </div>
     <div class="col-md-9">
-        {% block tasks_content %}
-        <p>Выберите список для отображения задач.</p>
-        {% endblock %}
     </div>
 </div>
 {% endblock %}

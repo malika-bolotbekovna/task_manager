@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     ListListView, ListCreateView, ListUpdateView, ListDeleteView, ListDetailView,
     TaskListView, TaskCreateView, TaskUpdateView, TaskDeleteView,
-    toggle_task_status, statistics_view,
+    toggle_task_status, statistics_view, pomodoro_view
 )
 
 urlpatterns = [
@@ -20,4 +20,6 @@ urlpatterns = [
 
     path('tasks/<int:pk>/toggle/', toggle_task_status, name='task-toggle'),
     path('statistics/', statistics_view, name='statistics'),
+    path('pomodoro/', pomodoro_view, name='pomodoro'),
+
 ]

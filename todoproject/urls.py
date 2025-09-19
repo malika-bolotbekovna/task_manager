@@ -6,8 +6,6 @@ from django.conf.urls.static import static
 from users.views import register_view
 from django.contrib.auth.views import LogoutView
 
-# class LogoutGetAllowedView(LogoutView):
-#     http_method_names = ['get', 'post']
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -18,8 +16,12 @@ urlpatterns = [
     # Авторизация
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
-    # path('accounts/login/', auth_views.LoginView.as_view(template_name='registration/login.html')),
-    path('register/', register_view, name='register'),  # регистрация отдельно на корне
+    path('register/', register_view, name='register'),
 
 
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

@@ -1,4 +1,5 @@
 from django import forms
+from django.utils import timezone
 from .models import Task
 
 class TaskForm(forms.ModelForm):
@@ -15,3 +16,9 @@ class TaskForm(forms.ModelForm):
             'priority': forms.Select(attrs={'class': 'form-select'}),
             'list': forms.Select(attrs={'class': 'form-select'}),
         }
+
+    def clean_deadline(self):
+        deadline = self.cleaned_data.get('deadline')
+        if deadline and deadline < timezone.now():
+            raise forms.ValidationError("Дедлайн не может быть в прошлом времени.")
+        return deadline

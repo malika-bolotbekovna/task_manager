@@ -20,12 +20,34 @@
 {{ pie_data_lists.labels|json_script:"labels_lists" }}
 {{ pie_data_lists.data|json_script:"data_lists" }}
 
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Плагин для отображения даталейблов (процентов) -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
 <script>
   const labelsAll = JSON.parse(document.getElementById('labels_all').textContent);
   const dataAll = JSON.parse(document.getElementById('data_all').textContent);
   const labelsLists = JSON.parse(document.getElementById('labels_lists').textContent);
   const dataLists = JSON.parse(document.getElementById('data_lists').textContent);
+
+  // Общие настройки плагина для процентов
+  const dataLabelOptions = {
+    color: '#fff',
+    formatter: (value, context) => {
+      if (value === 0) return ''; 
+      let sum = 0;
+      let dataArr = context.chart.data.datasets[0].data;
+      dataArr.forEach(val => sum += val);
+      let percentage = (value * 100 / sum).toFixed(1) + '%';
+      
+      return percentage;
+    },
+    font: {
+      weight: 'bold',
+      size: 14
+    }
+  };
 
   new Chart(document.getElementById("chartAll"), {
     type: "pie",
@@ -43,9 +65,11 @@
       plugins: {
         legend: {
           position: 'bottom'
-        }
+        },
+        datalabels: dataLabelOptions
       }
-    }
+    },
+    plugins: [ChartDataLabels]
   });
 
   new Chart(document.getElementById("chartLists"), {
@@ -67,9 +91,11 @@
       plugins: {
         legend: {
           position: 'bottom'
-        }
+        },
+        datalabels: dataLabelOptions
       }
-    }
+    },
+    plugins: [ChartDataLabels]
   });
 </script>
 
@@ -88,7 +114,6 @@
     {% else %}
     Попробуйте уделять больше внимания выполнению задач, чтобы повысить продуктивность.
     {% endif %}
-
   </p>
 </div>
 {% endblock %}

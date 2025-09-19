@@ -1,7 +1,7 @@
+from django.http import Http404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.db.models import Q, Count
 from django.contrib.auth.decorators import login_required
 from .models import List, Task
@@ -9,21 +9,33 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from .forms import TaskForm
 
+
+@login_required
+def pomodoro_view(request):
+    return render(request, 'tools/pomodoro.html')
+
 class TaskCreateView(LoginRequiredMixin, CreateView):
     model = Task
     form_class = TaskForm
     template_name = 'tasks/task_form.html'
     success_url = reverse_lazy('task-list')
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Безопасно фильтруем списки по владельцу
+        form.fields['list'].queryset = List.objects.filter(owner=self.request.user)
+        return form
+
+
     def form_valid(self, form):
-        form.instance.owner = self.request.user  # если есть поле owner
+        form.instance.owner = self.request.user 
         return super().form_valid(form)
 
-# Аналогично для TaskUpdateView
+
 class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
     form_class = TaskForm
-    template_name = 'tasks/task_form.html'
+    template_name = 'tasks/task_update.html'
     success_url = reverse_lazy('task-list')
 
 
@@ -40,7 +52,7 @@ class ListListView(LoginRequiredMixin, ListView):
 class ListCreateView(LoginRequiredMixin, CreateView):
     model = List
     fields = ['name']
-    template_name = 'tasks/list_form.html'
+    template_name = 'tasks/list_create.html'
     success_url = reverse_lazy('list-list')
 
     def form_valid(self, form):
@@ -51,7 +63,7 @@ class ListCreateView(LoginRequiredMixin, CreateView):
 class ListUpdateView(LoginRequiredMixin, UpdateView):
     model = List
     fields = ['name']
-    template_name = 'tasks/list_form.html'
+    template_name = 'tasks/list_update.html'
     success_url = reverse_lazy('list-list')
 
 
@@ -60,15 +72,50 @@ class ListDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'tasks/list_confirm_delete.html'
     success_url = reverse_lazy('list-list')
 
-class ListDetailView(DetailView):
+class ListDetailView(LoginRequiredMixin, DetailView):
     model = List
     template_name = 'tasks/list_view.html'
     context_object_name = 'list'
 
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if obj.owner != self.request.user:
+            raise Http404("Список не найден.")
+        return obj
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Передаем задачи, относящиеся к этому списку
-        context['tasks'] = Task.objects.filter(list=self.object)
+        now = timezone.now()
+        
+        # Получаем все задачи для данного списка
+        tasks = Task.objects.filter(list=self.object)
+
+        # Получаем фильтры из GET
+        status = self.request.GET.get('status')
+        search = self.request.GET.get('search')
+        sort = self.request.GET.get('sort')
+
+        if search:
+            tasks = tasks.filter(title__icontains=search)
+
+        if status == 'completed':
+            tasks = tasks.filter(completed=True)
+        elif status == 'not_completed':
+            tasks = tasks.filter(completed=False)
+        elif status == 'urgent':
+            tasks = tasks.filter(completed=False, priority='high')
+        elif status == 'overdue':
+            tasks = tasks.filter(completed=False, deadline__lt=now)
+
+        allowed_sorts = ['deadline', '-deadline', 'created_at', '-created_at', 'priority', '-priority']
+        if sort in allowed_sorts:
+            tasks = tasks.order_by(sort)
+        else:
+            tasks = tasks.order_by('deadline')
+
+        context['tasks'] = tasks
+        context['now'] = now
+        context['lists'] = self.request.user.lists.all()  # если нужно для бокового меню
         return context
 
 class TaskListView(LoginRequiredMixin, ListView):
@@ -77,10 +124,14 @@ class TaskListView(LoginRequiredMixin, ListView):
     context_object_name = 'tasks'
 
     def get_queryset(self):
-        qs = super().get_queryset().filter(list__owner=self.request.user)  # показывать задачи только своего пользователя
+        qs = super().get_queryset().filter(list__owner=self.request.user)
 
         status = self.request.GET.get('status')
+        search = self.request.GET.get('search')
         now = timezone.now()
+
+        if search:
+            qs = qs.filter(title__icontains=search)
 
         if status == 'completed':
             qs = qs.filter(completed=True)
@@ -91,22 +142,37 @@ class TaskListView(LoginRequiredMixin, ListView):
         elif status == 'overdue':
             qs = qs.filter(completed=False, deadline__lt=now)
 
-        # Добавь фильтрацию по списку (если надо)
         list_id = self.request.GET.get('list')
         if list_id:
             qs = qs.filter(list_id=list_id)
+
+        # Получаем параметр сортировки из запроса
+        sort = self.request.GET.get('sort')
+
+        # Безопасно задаём сортировку
+        allowed_sorts = ['deadline', '-deadline', 'created_at', '-created_at', 'priority', '-priority']
+        if sort in allowed_sorts:
+            qs = qs.order_by(sort)
+        else:
+            qs = qs.order_by('deadline')  # сортировка по умолчанию
 
         return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['now'] = timezone.now()
-        context['lists'] = self.request.user.lists.all()  # чтобы вывести боковое меню списков, если нужно
+        context['lists'] = self.request.user.lists.all()  # чтобы вывести боковое меню списков
         return context
 
-class TaskDeleteView(LoginRequiredMixin, DeleteView):
+class TaskDeleteView(DeleteView):
     model = Task
     template_name = 'tasks/task_confirm_delete.html'
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        success_url = request.META.get('HTTP_REFERER', '/')
+        self.object.delete()
+        return redirect(success_url)
 
     def get_success_url(self):
         return reverse_lazy('task-list') + f'?list={self.object.list.id}'

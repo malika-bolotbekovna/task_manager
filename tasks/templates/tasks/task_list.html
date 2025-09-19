@@ -1,16 +1,13 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Задачи{% endblock %}
-
 {% block content %}
 <h2>Задачи</h2>
-
 <form method="get" class="row g-3 align-items-center mb-4">
   <div class="col-auto">
     <label for="status" class="col-form-label">Фильтр:</label>
   </div>
-  <div class="col-auto">
+  <div class="col-auto" style="width: 180px;">
     <select name="status" id="status" class="form-select" onchange="this.form.submit()">
       <option value="" {% if not request.GET.status %}selected{% endif %}>Все</option>
       <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Выполненные</option>
@@ -19,16 +16,40 @@
       <option value="overdue" {% if request.GET.status == 'overdue' %}selected{% endif %}>Просроченные</option>
     </select>
   </div>
+
   <div class="col-auto">
-    <input type="text" name="search" placeholder="Поиск..." class="form-control" value="{{ request.GET.search|default:'' }}" />
+    <label for="sort" class="col-form-label">Сортировать по:</label>
   </div>
-  <div class="col-auto">
-    <button type="submit" class="btn btn-primary">Применить</button>
+  <div class="col-auto" style="width: 180px;">
+    <select name="sort" id="sort" class="form-select" onchange="this.form.submit()">
+      <option value="" {% if not request.GET.sort %}selected{% endif %}>Без сортировки</option>
+      <option value="deadline" {% if request.GET.sort == 'deadline' %}selected{% endif %}>Дедлайн (по возрастанию)</option>
+      <option value="-deadline" {% if request.GET.sort == '-deadline' %}selected{% endif %}>Дедлайн (по убыванию)</option>
+      <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Дата создания (по возрастанию)</option>
+      <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Дата создания (по убыванию)</option>
+      <option value="priority" {% if request.GET.sort == 'priority' %}selected{% endif %}>Приоритет (по возрастанию)</option>
+      <option value="-priority" {% if request.GET.sort == '-priority' %}selected{% endif %}>Приоритет (по убыванию)</option>
+    </select>
   </div>
+
   <div class="col-auto">
-    <a href="{% url 'task-create' %}" class="btn btn-success mb-3">+ Добавить задачу</a>
+    <label for="search" class="col-form-label">Поиск:</label>
+  </div>
+  <div class="col-auto" style="width: 180px;">
+    <input id="search" type="text" name="search" placeholder="Поиск..." class="form-control" value="{{ request.GET.search|default:'' }}" />
+  </div>
+
+  <div class="col-auto">
+    <button type="submit" class="btn btn-custom">Применить</button>
   </div>
 </form>
+
+<div class="mb-3">
+  <a href="{% url 'task-create' %}" class="btn btn-custom">+ Добавить задачу</a>
+</div>
+
+
+
 
 <table class="table table-hover">
   <thead>

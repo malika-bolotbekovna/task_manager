@@ -1,11 +1,10 @@
 {% extends "base.html" %}
-{% block content %}
-<h2>Регистрация</h2>
 
+{% block content %}
 <form method="post" enctype="multipart/form-data">
   {% csrf_token %}
-  {{ form.as_p }}
-  <button class="btn btn-primary">Зарегистрироваться</button>
+  {{ user_form.as_p }}
+  {{ profile_form.as_p }}
+  <button type="submit" class="btn btn-custom">Зарегистрироваться</button>
 </form>
-  <p>Есть аккаунт? <a href="{% url 'login' %}">Войти</a></p>
 {% endblock %}

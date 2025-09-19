@@ -2,30 +2,103 @@
 {% block content %}
 <h2>Список: {{ list.name }}</h2>
 
-{% if tasks %}
-<table class="table">
+<form method="get" class="row g-3 align-items-center mb-4">
+  <div class="col-auto">
+    <label for="status" class="col-form-label">Фильтр:</label>
+  </div>
+  <div class="col-auto">
+    <select name="status" id="status" class="form-select" onchange="this.form.submit()">
+      <option value="" {% if not request.GET.status %}selected{% endif %}>Все</option>
+      <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Выполненные</option>
+      <option value="not_completed" {% if request.GET.status == 'not_completed' %}selected{% endif %}>Не выполненные</option>
+      <option value="urgent" {% if request.GET.status == 'urgent' %}selected{% endif %}>Срочные</option>
+      <option value="overdue" {% if request.GET.status == 'overdue' %}selected{% endif %}>Просроченные</option>
+    </select>
+  </div>
+
+  <div class="col-auto">
+    <label for="sort" class="col-form-label">Сортировать по:</label>
+  </div>
+  <div class="col-auto">
+    <select name="sort" id="sort" class="form-select" onchange="this.form.submit()">
+      <option value="" {% if not request.GET.sort %}selected{% endif %}>Без сортировки</option>
+      <option value="deadline" {% if request.GET.sort == 'deadline' %}selected{% endif %}>Дедлайн (по возрастанию)</option>
+      <option value="-deadline" {% if request.GET.sort == '-deadline' %}selected{% endif %}>Дедлайн (по убыванию)</option>
+      <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Дата создания (по возрастанию)</option>
+      <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Дата создания (по убыванию)</option>
+      <option value="priority" {% if request.GET.sort == 'priority' %}selected{% endif %}>Приоритет (по возрастанию)</option>
+      <option value="-priority" {% if request.GET.sort == '-priority' %}selected{% endif %}>Приоритет (по убыванию)</option>
+    </select>
+  </div>
+
+  <div class="col-auto">
+    <label for="search" class="col-form-label">Поиск:</label>
+  </div>
+  <div class="col-auto">
+    <input id="search" type="text" name="search" placeholder="Поиск..." class="form-control" value="{{ request.GET.search|default:'' }}" />
+  </div>
+
+  <div class="col-auto">
+    <button type="submit" class="btn btn-custom">Применить</button>
+  </div>
+</form>
+
+<div class="mb-3">
+  <a href="{% url 'task-create' %}" class="btn btn-custom">+ Добавить задачу</a>
+</div>
+
+<table class="table table-hover">
   <thead>
     <tr>
-      <th>Задача</th>
+      <th>Статус</th>
+      <th>Название</th>
       <th>Приоритет</th>
       <th>Дедлайн</th>
-      <th>Статус</th>
+      <th>Создана</th>
+      <th>Выполнена</th>
+      <th>Действия</th>
     </tr>
   </thead>
   <tbody>
     {% for task in tasks %}
-    <tr>
-      <td>{{ task.title }}</td>
-      <td>{{ task.get_priority_display }}</td>
-      <td>{% if task.deadline %}{{ task.deadline|date:"d.m.Y H:i" }}{% endif %}</td>
-      <td>{% if task.completed %}Выполнена{% else %}В работе{% endif %}</td>
-    </tr>
+      <tr class="{% if task.completed %}table-success{% elif task.deadline and task.deadline < now %}table-danger{% endif %}">
+        <td>
+          <form method="post" action="{% url 'task-toggle' task.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="completed" value="{% if task.completed %}False{% else %}True{% endif %}">
+            <button type="submit" class="btn btn-sm btn-outline-{% if task.completed %}success{% else %}secondary{% endif %}">
+              {% if task.completed %}✓{% else %}✗{% endif %}
+            </button>
+          </form>
+        </td>
+        <td>{{ task.title }}</td>
+        <td>{{ task.get_priority_display }}</td>
+        <td>
+          {% if task.deadline %}
+            <span class="{% if task.deadline < now %}text-danger{% elif task.deadline < now|add:'2 days' %}text-warning{% else %}text-success{% endif %}">
+              {{ task.deadline|date:"d.m.Y H:i" }}
+            </span>
+          {% endif %}
+        </td>
+        <td>{{ task.created_at|date:"d.m.Y H:i" }}</td>
+        <td>
+          {% if task.completed_at %}
+            {{ task.completed_at|date:"d.m.Y H:i" }}
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'task-update' task.id %}" class="btn btn-sm btn-outline-secondary">✎</a>
+          <a href="{% url 'task-delete' task.id %}" class="btn btn-sm btn-outline-danger">✖</a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr>
+        <td colspan="7" class="text-center">Нет задач</td>
+      </tr>
     {% endfor %}
   </tbody>
 </table>
-{% else %}
-<p>В этом списке пока нет задач.</p>
-{% endif %}
-
+<a href="{% url 'list-list' %}" class="btn btn-custom btn-sm w-25">Редактировать список</a>
+<p></p>
 <a href="{% url 'task-list' %}">Вернуться ко всем задачам</a>
 {% endblock %}
